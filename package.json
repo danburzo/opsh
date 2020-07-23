@@ -1,0 +1,14 @@
+{
+  "name": "opsh",
+  "version": "0.0.1",
+  "main": "index.js",
+  "repository": "git@github.com:danburzo/opsh.git",
+  "author": "Dan Burzo <dan@danburzo.ro>",
+  "license": "MIT",
+  "devDependencies": {
+    "tape": "^5.0.1"
+  },
+  "scripts": {
+  	"test": "tape index.test.js"
+  }
+}
