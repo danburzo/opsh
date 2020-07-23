@@ -14,63 +14,85 @@ yarn add opsh
 
 ## Usage
 
-__example.js:__
+__examples/basic.js:__
 ```js
 #! /usr/bin/env node
-let opsh = require('ophs');
-console.log(
-	opsh(process.argv.slice(2))
-);
+let { walkArgs, getArgs } = require('ophs');
+walkArgs(process.argv.slice(2), {
+	option(item, value) {
+		console.log(`option: ${item} = ${value}`);
+	},
+	operand(item, opt) {
+		if (opt) {
+			console.log(`operand or value of ${opt}: ${item}`)
+		} else {
+			console.log(`operand: ${item}`);
+		}
+	}
+});
 ```
 
 ```bash
-./example.js -i input.txt --format=terse -n output.txt
-[
-	['i', 'option', 'input.txt'],
-	['format', 'option', 'terse'],
-	['n', 'option'],
-	['output.txt', 'operand', 'n']
-]
+./examples/basic.js -i input.txt --format=terse -n output.txt
+
+option: i = undefined
+operand or value of i: input.txt
+option: format = terse
+option: n = undefined
+operand or value of n: output.txt
 ```
 
 ## API
 
-`opsh` supports two styles:
+The library exports a single function that can be used in three styles:
 
-* You can go through each argument one by one with a callback: `opsh(argv, callback)`;
-* You can get the parsed arguments as an array: `opsh(argv)` → `array`.
+#### __opsh__(_args_, _walker_object_)
 
-### Callback style
+The function expects an _args_ array (you'll usually want to pass in `process.argv.slice(2)`), and a _walker_ object of the shape:
 
 ```js
-opsh(
-	process.argv.slice(2), 
-	function(item, type, detail) {
-		if (type === 'operand') {
-			// ...
-		} else if (type === 'option') {
-			// ...
-		}
+opsh(process.argv.slice(2), {
+	option(option, value) {
+		// ...
+	},
+	operand(operand, unsaturated_option) {
+		// ...
+	},
+	delimiter(delimiter, unsturated_option) {
+		// ...
 	}
-);
+});
 ```
 
-The callback gets sent the following:
+Returning `false` from any walker function stops the traversal.
 
-* `item`: 
-* `type`: one of `option`, `operand`, `delimiter` (when the item is `--`).
-* `detail`: depends on the `type`
+#### __opsh__(_args_, _walker_function_)
 
-For an `option`, `detail` will contain the value passed to the option, which is possible with the long-option syntax, i.e. `--hello=world`.
+You can pass a single function instead of an object:
 
-For a `delimiter`, `detail` contains the preceding option, if any, that does not have an explicit value.
+```js
+opsh(process.argv.slice(2), function(type, item, detail) {
+	// ...
+});
+```
 
-For `operand`s, `detail` likewise contains the preceding option, if any, that does not have an explicit value. The presence of a `detail` value signals ambiguity: the operand can .
+The function will receive:
 
-### Return style
+* `type`: one of `option`, `operand`, `delimiter`;
+* `item`: the option name, or the operand value, or `--` for the delimiter;
+* `detail`: the explicit value of an `option`, or the preceding unsaturated option, if any.
 
-When called without a callback, `opsh` returns an array of `[item, type, detail]` elements.
+Returning `false` from the function stops the traversal.
 
+#### __opsh__(_args_) → _parsed args_
+
+If you don't provide a walker, the `opsh` function returns instead an array of objects in the form:
+
+* `{ type: 'option', option: '...', value: '...' }` for options; `value` is only provided when explicitly provided through the long-option form `--hello=world`;
+* `{ type: 'operand', operand: '...', option: '...' }` for operands; `option` refers to the preceding unsaturated option, if any;
+* `{ type: 'delimiter', delimiter: '--', option: '...' }` for the `--` delimiter; `option` refers to the preceding unsaturated option, if any.
+
+The entire array of arguments is traversed.
 
 ## Notes
 
