@@ -1,6 +1,8 @@
 # opsh
 
-Node.js command-line argument processor supporting the [POSIX guidelines](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html) and GNU-style long options.
+An argument processor for your Node.js command-line apps. 
+
+It gives you a helping hand in adhering to the [POSIX guidelines](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html), while supporting GNU-style long options.
 
 ## Installation
 
@@ -14,17 +16,17 @@ yarn add opsh
 
 ## Usage
 
-__examples/basic.js:__
+__example.js:__
 ```js
 #! /usr/bin/env node
-let { walkArgs, getArgs } = require('ophs');
-walkArgs(process.argv.slice(2), {
-	option(item, value) {
-		console.log(`option: ${item} = ${value}`);
+let opsh = require('opsh');
+opsh(process.argv.slice(2), {
+	option(option, value) {
+		console.log(`option: ${option} = ${value}`);
 	},
-	operand(item, opt) {
+	operand(operand, opt) {
 		if (opt) {
-			console.log(`operand or value of ${opt}: ${item}`)
+			console.log(`operand or option-argument of ${opt}: ${item}`)
 		} else {
 			console.log(`operand: ${item}`);
 		}
@@ -33,14 +35,20 @@ walkArgs(process.argv.slice(2), {
 ```
 
 ```bash
-./examples/basic.js -i input.txt --format=terse -n output.txt
+./example.js -i input.txt --format=terse -n output.txt
 
 option: i = undefined
-operand or value of i: input.txt
+operand or option-argument of i: input.txt
 option: format = terse
 option: n = undefined
-operand or value of n: output.txt
+operand or option-argument of n: output.txt
 ```
+
+### What's going on here?
+
+opsh identifies options, option-arguments, and operands based on the POSIX / GNU conventions, and not much more. Any further semantics is left to the author. 
+
+In the command above, the meaning of `input.txt` is ambiguous. Without further information, opsh can't tell whether it is the option-argument (value) of the `-i` option immediately preceding it (which we say is _unsaturated_ because it doesn't have an explicit value), or an operand. 
 
 ## API
 
