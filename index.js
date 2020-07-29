@@ -59,7 +59,7 @@ function walkArgs(arr, fn) {
 		}
 
 		// --x=y
-		if (m = curr.match(/^--([a-zA-Z0-9\-]+)(?:=([^]*))?$/)) {
+		if (m = curr.match(/^--([a-zA-Z0-9\-.]+)(?:=([^]*))?$/)) {
 			last_opt = m[2] === undefined ? m[1] : undefined;
 			if (fn_opt(m[1], m[2]) === false) {
 				return;

@@ -16,6 +16,20 @@ tape('short and long options', t => {
 	t.end();
 });
 
+tape('long options', t => {
+	t.deepEqual(
+		opsh(['--my-var=my-value']),
+		[{ type: 'option', 'option': 'my-var', value: 'my-value' }]
+	);
+
+	t.deepEqual(
+		opsh(['--env.target=production']),
+		[{ type: 'option', 'option': 'env.target', value: 'production' }]
+	);
+
+	t.end();
+});
+
 tape('delimiter', t => {
 	t.deepEqual(
 		opsh(['--', '--hello']), 
