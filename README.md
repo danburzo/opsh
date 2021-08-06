@@ -1,22 +1,21 @@
 # opsh
 
-An argument processor for your Node.js command-line apps. 
+<a href="https://www.npmjs.org/package/opsh"><img src="https://img.shields.io/npm/v/opsh.svg?style=flat-square&labelColor=5085c0&color=dedcdb" alt="npm version"></a> <a href="https://bundlephobia.com/result?p=opsh"><img src="https://img.shields.io/bundlephobia/minzip/opsh?style=flat-square&labelColor=5085c0&color=dedcdb" alt="bundle size"></a>
 
-It gives you a helping hand in adhering to the [POSIX guidelines](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html), while supporting GNU-style long options.
-
-## Installation
-
-```bash
-# using npm:
-npm install opsh
-
-# using yarn:
-yarn add opsh
-```
+An argument processor for your Node.js command-line apps that gives you a helping hand in adhering to the [POSIX guidelines](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html), while supporting [GNU-style long options](https://www.gnu.org/software/gawk/manual/html_node/Options.html).
 
 ## Usage
 
-__example.js:__
+Install [the opsh package](https://npmjs.com/package/opsh) with npm:
+
+```bash
+npm install opsh
+```
+
+Then use it in your executable file.
+
+**example.js:**
+
 ```js
 #! /usr/bin/env node
 let opsh = require('opsh');
@@ -26,13 +25,17 @@ opsh(process.argv.slice(2), {
 	},
 	operand(operand, opt) {
 		if (opt) {
-			console.log(`operand or option-argument of ${opt}: ${item}`)
+			console.log(`operand or option-argument of ${opt}: ${item}`);
 		} else {
 			console.log(`operand: ${item}`);
 		}
 	}
 });
 ```
+
+> **Note:** Before running your program for the first time, you need to run `chmod +x example.js` to make your file executable.
+
+Running `example.js` produces this output:
 
 ```bash
 ./example.js -i input.txt --format=terse -n output.txt
@@ -44,63 +47,93 @@ option: n = undefined
 operand or option-argument of n: output.txt
 ```
 
-### What's going on here?
+Let's unpack what's going on.
 
-opsh identifies options, option-arguments, and operands based on the POSIX / GNU conventions, and not much more. Any further semantics is left to the author. 
+The way opsh works is it identifies **options**, **option-arguments** (that's an option's value), and **operands** based on the POSIX / GNU conventions, and not much more. Any further semantics is left to the library user.
 
-In the command above, the meaning of `input.txt` is ambiguous. Without further information, opsh can't tell whether it is the option-argument (value) of the `-i` option immediately preceding it (which we say is _unsaturated_ because it doesn't have an explicit value), or an operand. 
+In the command above, the meaning of `input.txt` is ambiguous. Without further information, opsh can't tell whether it is the option-argument of the `-i` option immediately preceding it, or an operand.
 
-## API
+## The `opsh()` function
 
-The library exports a single function that can be used in three styles:
+The library exports a single `opsh()` function that can be invoked in two ways. The first argument _args_ is common to both styles, and represents the array of arguments to parse. You'll usually want to pass in `process.argv.slice(2)`.
 
-#### __opsh__(_args_, _walker_object_)
+### Basic usage
 
-The function expects an _args_ array (you'll usually want to pass in `process.argv.slice(2)`), and a _walker_ object of the shape:
+**opsh**(_args_: Array, _booleanOptions_: Array)
+
+One way to sort out ambiguous input is to declare upfront which options are meant to be _boolean_, meaning they don't accept an option-argument. Providing a `booleanOptions` array as the second argument lets opsh sort out operands from option-arguments and return an object with these keys:
+
+-   `options` — options and their option-argument are present here in key-value pairs;
+-   `operands` — an array of operands.
+
+This style of invoking `opsh()` will throw an error whenever a boolean option receives an option-operand, or a non-boolean option doesn't receive one.
+
+Let's take our previous invocation:
+
+```bash
+./example.js -i input.txt --format=terse -n output.txt
+```
+
+And this time let's specify that `-n` is a boolean option and that, conversely, `-i` and `--format` accept values.
+
+```js
+const args = '-i input.txt --format=terse -n output.txt'.split(' ');
+opsh(args, ['n']);
+```
+
+This gives us the following result:
+
+```js
+{
+	options: {
+		i: 'input.txt',
+		format: 'terse',
+		n: true
+	},
+	operands: ['output.txt']
+}
+```
+
+### Advanced usage
+
+**opsh**(_args_: Array, _walker_: Object)
+
+Provide a _walker object_ as the second argument for full control on how the user input is interpreted. A walker object contains these keys (all optional):
 
 ```js
 opsh(process.argv.slice(2), {
-	option(option, value) {
+	/*
+		Invoked when visiting an option (`option`),
+		with or without an explicit option-argument (`value`).
+
+		There might be a previous option left unsaturated
+		(`unsaturated_option`).
+	 */
+	option(option, value, unsaturated_option) {
 		// ...
 	},
+
+	/*
+		Invoked when visiting an operand (`operand`) or 
+		possible option-argument when the previous option
+		was left unsaturated (`unsaturated_option`).
+	 */
 	operand(operand, unsaturated_option) {
 		// ...
 	},
+
+	/*
+		Invoked when visiting the `--` delimiter.
+		There might be a previous option left unsaturated
+		(`unsaturated_option`).
+	 */
 	delimiter(delimiter, unsturated_option) {
 		// ...
 	}
 });
 ```
 
-Returning `false` from any walker function stops the traversal.
-
-#### __opsh__(_args_, _walker_function_)
-
-You can pass a single function instead of an object:
-
-```js
-opsh(process.argv.slice(2), function(type, item, detail) {
-	// ...
-});
-```
-
-The function will receive:
-
-* `type`: one of `option`, `operand`, `delimiter`;
-* `item`: the option name, or the operand value, or `--` for the delimiter;
-* `detail`: the explicit value of an `option`, or the preceding unsaturated option, if any.
-
-Returning `false` from the function stops the traversal.
-
-#### __opsh__(_args_) → _parsed args_
-
-If you don't provide a walker, the `opsh` function returns instead an array of objects in the form:
-
-* `{ type: 'option', option: '...', value: '...' }` for options; `value` is only provided when explicitly provided through the long-option form `--hello=world`;
-* `{ type: 'operand', operand: '...', option: '...' }` for operands; `option` refers to the preceding unsaturated option, if any;
-* `{ type: 'delimiter', delimiter: '--', option: '...' }` for the `--` delimiter; `option` refers to the preceding unsaturated option, if any.
-
-The entire array of arguments is traversed.
+Returning `false` from any walker function stops further traversal.
 
 ## Notes
 

@@ -1,48 +1,66 @@
 'use strict';
 
 const noop = () => {};
-const fwd = (fn, type) => (item, detail) => fn(type, item, detail);
 
 function walkArgs(arr, fn) {
-	
 	if (!fn) {
-		let res = [];
+		throw new Error('No walker object / array was provided.');
+	}
+
+	if (Array.isArray(fn)) {
+		const bool = new Set(fn);
+		const res = {
+			options: {},
+			operands: []
+		};
 		walkArgs(arr, {
-			option(option, value) {
-				let item = { type: 'option', option };
-				if (value !== undefined) {
-					item.value = value;
+			option(option, value, unsaturated_option) {
+				if (unsaturated_option && !bool.has(unsaturated_option)) {
+					throw new Error(
+						`${unsaturated_option} expects a value, received option ${option}.`
+					);
 				}
-				res.push(item);
+				if (bool.has(option)) {
+					if (value !== undefined) {
+						throw new Error(
+							`${option} does not accept a value, received ${value}.`
+						);
+					}
+					res.options[option] = true;
+				} else {
+					if (value !== undefined) {
+						res.options[option] = value;
+					}
+				}
 			},
 			operand(operand, unsaturated_option) {
-				let item = { type: 'operand', operand };
-				if (unsaturated_option !== undefined) {
-					item.option = unsaturated_option;
+				if (!unsaturated_option || bool.has(unsaturated_option)) {
+					res.operands.push(operand);
+				} else {
+					res.options[unsaturated_option] = operand;
 				}
-				res.push(item);
 			},
 			delimiter(delimiter, unsaturated_option) {
-				let item = { type: 'delimiter', delimiter };
-				if (unsaturated_option !== undefined) {
-					item.option = unsaturated_option;
+				if (unsaturated_option && !bool.has(unsaturated_option)) {
+					throw `${unsaturated_option} expects a value, received ${delimiter}.`;
 				}
-				res.push(item);
 			}
 		});
 		return res;
 	}
-	
-	const isfn = typeof fn === 'function';
-	const fn_opt = isfn ? fwd(fn, 'option') : fn.option || noop;
-	const fn_operand = isfn ? fwd(fn, 'operand') : fn.operand || noop;
-	const fn_delim = isfn ? fwd(fn, 'delimiter') : fn.delimiter || noop;
+
+	const fn_opt = fn.option || noop;
+	const fn_operand = fn.operand || noop;
+	const fn_delim = fn.delimiter || noop;
 
 	let args = arr.slice();
-	let curr, m, has_delim = false, last_opt = undefined;
+	let curr;
+	let m;
+	let has_delimiter = false;
+	let last_option = undefined;
+	let should_break;
 	while ((curr = args.shift()) !== undefined) {
-
-		if (has_delim) {
+		if (has_delimiter) {
 			if (fn_operand(curr) === false) {
 				return;
 			}
@@ -50,17 +68,22 @@ function walkArgs(arr, fn) {
 		}
 
 		// -xyz
-		if (m = curr.match(/^-([a-zA-Z0-9]+)$/)) {
-			last_opt = m[1][m[1].length - 1];
-			if (m[1].split('').some(f => fn_opt(f) === false)) {
+		if ((m = curr.match(/^-([a-zA-Z0-9]+)$/))) {
+			should_break = m[1].split('').some(f => {
+				if (fn_opt(f, undefined, last_option) === false) {
+					return true;
+				}
+				last_option = f;
+			});
+			if (should_break) {
 				return;
 			}
 			continue;
 		}
 
 		// --x=y
-		if (m = curr.match(/^--([a-zA-Z0-9\-.]+)(?:=([^]*))?$/)) {
-			last_opt = m[2] === undefined ? m[1] : undefined;
+		if ((m = curr.match(/^--([a-zA-Z0-9\-.]+)(?:=([^]*))?$/))) {
+			last_option = m[2] === undefined ? m[1] : undefined;
 			if (fn_opt(m[1], m[2]) === false) {
 				return;
 			}
@@ -68,19 +91,19 @@ function walkArgs(arr, fn) {
 		}
 
 		if (curr == '--') {
-			if (fn_delim(curr, last_opt) === false) {
+			if (fn_delim(curr, last_option) === false) {
 				return;
 			}
-			has_delim = true;
-			last_opt = undefined;
+			has_delimiter = true;
+			last_option = undefined;
 			continue;
 		}
 
-		if (last_opt) {
-			if (fn_operand(curr, last_opt) === false) {
+		if (last_option) {
+			if (fn_operand(curr, last_option) === false) {
 				return;
 			}
-			last_opt = undefined;
+			last_option = undefined;
 			continue;
 		}
 
@@ -88,7 +111,7 @@ function walkArgs(arr, fn) {
 			return;
 		}
 	}
-	return undefined;
-};
+	return fn && fn.returns ? fn.returns : undefined;
+}
 
 module.exports = walkArgs;
