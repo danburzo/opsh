@@ -1,6 +1,6 @@
 {
 	"name": "opsh",
-	"version": "0.1.1",
+	"version": "1.0.0",
 	"main": "index.js",
 	"repository": "git@github.com:danburzo/opsh.git",
 	"author": "Dan Burzo <dan@danburzo.ro>",
