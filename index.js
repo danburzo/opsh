@@ -4,7 +4,6 @@ const noop = () => {};
 const fwd = (fn, type) => (item, detail) => fn(type, item, detail);
 
 function walkArgs(arr, fn) {
-	
 	if (!fn) {
 		let res = [];
 		walkArgs(arr, {
@@ -32,16 +31,65 @@ function walkArgs(arr, fn) {
 		});
 		return res;
 	}
-	
+
+	if (Array.isArray(fn)) {
+		let bools = new Set(fn);
+		let res = {
+			options: {},
+			operands: []
+		};
+		let expected_value;
+		walkArgs(arr, {
+			option(option, value) {
+				if (expected_value) {
+					throw new Error(
+						`${expected_value} expects a value, received option ${option}`
+					);
+				}
+				if (bools.has(option)) {
+					if (value !== undefined) {
+						throw new Error(
+							`${option} does not accept a value, received ${value}`
+						);
+					}
+					res.options[option] = true;
+				} else {
+					if (value !== undefined) {
+						res.options[option] = value;
+					} else {
+						expected_value = option;
+					}
+				}
+			},
+			operand(operand, unsaturated_option) {
+				if (bools.has(unsaturated_option)) {
+					// operand
+					res.operands.push(operand);
+				} else {
+					res.options[unsaturated_option] = operand;
+					expected_value = undefined;
+				}
+			},
+			delimiter(delimiter, unsaturated_option) {
+				if (!bools.has(unsaturated_option)) {
+					throw `${unsaturated_option} expects a value, received ${delimiter}`;
+				}
+			}
+		});
+		return res;
+	}
+
 	const isfn = typeof fn === 'function';
 	const fn_opt = isfn ? fwd(fn, 'option') : fn.option || noop;
 	const fn_operand = isfn ? fwd(fn, 'operand') : fn.operand || noop;
 	const fn_delim = isfn ? fwd(fn, 'delimiter') : fn.delimiter || noop;
 
 	let args = arr.slice();
-	let curr, m, has_delim = false, last_opt = undefined;
+	let curr,
+		m,
+		has_delim = false,
+		last_opt = undefined;
 	while ((curr = args.shift()) !== undefined) {
-
 		if (has_delim) {
 			if (fn_operand(curr) === false) {
 				return;
@@ -50,7 +98,7 @@ function walkArgs(arr, fn) {
 		}
 
 		// -xyz
-		if (m = curr.match(/^-([a-zA-Z0-9]+)$/)) {
+		if ((m = curr.match(/^-([a-zA-Z0-9]+)$/))) {
 			last_opt = m[1][m[1].length - 1];
 			if (m[1].split('').some(f => fn_opt(f) === false)) {
 				return;
@@ -59,7 +107,7 @@ function walkArgs(arr, fn) {
 		}
 
 		// --x=y
-		if (m = curr.match(/^--([a-zA-Z0-9\-.]+)(?:=([^]*))?$/)) {
+		if ((m = curr.match(/^--([a-zA-Z0-9\-.]+)(?:=([^]*))?$/))) {
 			last_opt = m[2] === undefined ? m[1] : undefined;
 			if (fn_opt(m[1], m[2]) === false) {
 				return;
@@ -89,6 +137,6 @@ function walkArgs(arr, fn) {
 		}
 	}
 	return undefined;
-};
+}
 
 module.exports = walkArgs;

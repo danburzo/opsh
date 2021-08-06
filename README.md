@@ -1,6 +1,6 @@
 # opsh
 
-An argument processor for your Node.js command-line apps. 
+An argument processor for your Node.js command-line apps.
 
 It gives you a helping hand in adhering to the [POSIX guidelines](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html), while supporting GNU-style long options.
 
@@ -16,7 +16,8 @@ yarn add opsh
 
 ## Usage
 
-__example.js:__
+**example.js:**
+
 ```js
 #! /usr/bin/env node
 let opsh = require('opsh');
@@ -26,7 +27,7 @@ opsh(process.argv.slice(2), {
 	},
 	operand(operand, opt) {
 		if (opt) {
-			console.log(`operand or option-argument of ${opt}: ${item}`)
+			console.log(`operand or option-argument of ${opt}: ${item}`);
 		} else {
 			console.log(`operand: ${item}`);
 		}
@@ -46,15 +47,15 @@ operand or option-argument of n: output.txt
 
 ### What's going on here?
 
-opsh identifies options, option-arguments, and operands based on the POSIX / GNU conventions, and not much more. Any further semantics is left to the author. 
+opsh identifies options, option-arguments, and operands based on the POSIX / GNU conventions, and not much more. Any further semantics is left to the author.
 
-In the command above, the meaning of `input.txt` is ambiguous. Without further information, opsh can't tell whether it is the option-argument (value) of the `-i` option immediately preceding it (which we say is _unsaturated_ because it doesn't have an explicit value), or an operand. 
+In the command above, the meaning of `input.txt` is ambiguous. Without further information, opsh can't tell whether it is the option-argument (value) of the `-i` option immediately preceding it (which we say is _unsaturated_ because it doesn't have an explicit value), or an operand.
 
 ## API
 
 The library exports a single function that can be used in three styles:
 
-#### __opsh__(_args_, _walker_object_)
+#### **opsh**(_args_, _walker_object_)
 
 The function expects an _args_ array (you'll usually want to pass in `process.argv.slice(2)`), and a _walker_ object of the shape:
 
@@ -74,31 +75,38 @@ opsh(process.argv.slice(2), {
 
 Returning `false` from any walker function stops the traversal.
 
-#### __opsh__(_args_, _walker_function_)
+#### **opsh**(_args_, _walker_function_)
 
 You can pass a single function instead of an object:
 
 ```js
-opsh(process.argv.slice(2), function(type, item, detail) {
+opsh(process.argv.slice(2), function (type, item, detail) {
 	// ...
 });
 ```
 
 The function will receive:
 
-* `type`: one of `option`, `operand`, `delimiter`;
-* `item`: the option name, or the operand value, or `--` for the delimiter;
-* `detail`: the explicit value of an `option`, or the preceding unsaturated option, if any.
+-   `type`: one of `option`, `operand`, `delimiter`;
+-   `item`: the option name, or the operand value, or `--` for the delimiter;
+-   `detail`: the explicit value of an `option`, or the preceding unsaturated option, if any.
 
 Returning `false` from the function stops the traversal.
 
-#### __opsh__(_args_) → _parsed args_
+#### **opsh**(_args_, _booleans_) → _{ options, operands }_
+
+If you provide a _booleans_ array as the second argument, the `opsh` function returns an object with the following keys:
+
+-   `options`: an object containing key-value pairs;
+-   `operands`: an array of operands.
+
+#### **opsh**(_args_) → _parsed args_
 
 If you don't provide a walker, the `opsh` function returns instead an array of objects in the form:
 
-* `{ type: 'option', option: '...', value: '...' }` for options; `value` is only provided when explicitly provided through the long-option form `--hello=world`;
-* `{ type: 'operand', operand: '...', option: '...' }` for operands; `option` refers to the preceding unsaturated option, if any;
-* `{ type: 'delimiter', delimiter: '--', option: '...' }` for the `--` delimiter; `option` refers to the preceding unsaturated option, if any.
+-   `{ type: 'option', option: '...', value: '...' }` for options; `value` is only provided when explicitly provided through the long-option form `--hello=world`;
+-   `{ type: 'operand', operand: '...', option: '...' }` for operands; `option` refers to the preceding unsaturated option, if any;
+-   `{ type: 'delimiter', delimiter: '--', option: '...' }` for the `--` delimiter; `option` refers to the preceding unsaturated option, if any.
 
 The entire array of arguments is traversed.
 
