@@ -85,10 +85,10 @@ function walkArgs(arr, fn) {
 	const fn_delim = isfn ? fwd(fn, 'delimiter') : fn.delimiter || noop;
 
 	let args = arr.slice();
-	let curr,
-		m,
-		has_delim = false,
-		last_opt = undefined;
+	let curr;
+	let m;
+	let has_delim = false;
+	let last_opt = undefined;
 	while ((curr = args.shift()) !== undefined) {
 		if (has_delim) {
 			if (fn_operand(curr) === false) {
