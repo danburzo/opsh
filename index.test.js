@@ -83,7 +83,7 @@ tape('booleans array', t => {
 	);
 	t.throws(
 		() => opsh($`-rc -- input.txt`, ['r']),
-		/expects a value, received \-\-/
+		/expects a value, received --/
 	);
 	t.throws(
 		() => opsh($`--format=esm index.js`, ['format']),

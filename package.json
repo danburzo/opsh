@@ -22,7 +22,8 @@
 	},
 	"husky": {
 		"hooks": {
-			"pre-commit": "pretty-quick --staged"
+			"pre-commit": "pretty-quick --staged",
+			"post-commit": "npm run test && npm run lint"
 		}
 	},
 	"prettier": {

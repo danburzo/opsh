@@ -7,18 +7,6 @@ function walkArgs(arr, fn) {
 		throw new Error('No walker object / array was provided.');
 	}
 
-	/*
-		When an array of boolean flags is provided,
-		return an object in the shape:
-
-		{
-			options: {
-				<option>: <value>,
-				...
-			},
-			operands: [ <operand>, <operand>, ... ]
-		}
-	 */
 	if (Array.isArray(fn)) {
 		const bool = new Set(fn);
 		const res = {
