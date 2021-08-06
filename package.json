@@ -5,6 +5,10 @@
 	"repository": "git@github.com:danburzo/opsh.git",
 	"author": "Dan Burzo <dan@danburzo.ro>",
 	"license": "MIT",
+	"files": [
+		"index.js",
+		"walkers"
+	],
 	"devDependencies": {
 		"eslint": "^7.32.0",
 		"husky": "^4.3.8",
