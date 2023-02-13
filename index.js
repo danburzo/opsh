@@ -3,9 +3,7 @@
 const noop = () => {};
 
 function walkArgs(arr, fn) {
-	if (!fn) {
-		throw new Error('No walker object / array was provided.');
-	}
+	fn = fn || [];
 
 	if (Array.isArray(fn)) {
 		const bool = new Set(fn);

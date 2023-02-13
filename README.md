@@ -68,6 +68,8 @@ One way to sort out ambiguous input is to declare upfront which options are mean
 
 This style of invoking `opsh()` will throw an error whenever a boolean option receives an option-operand, or a non-boolean option doesn't receive one.
 
+When _booleanOptions_ is omitted, it defaults to the empty array `[]`.
+
 Let's take our previous invocation:
 
 ```bash

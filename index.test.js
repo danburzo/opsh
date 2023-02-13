@@ -73,6 +73,11 @@ tape('operands', t => {
 });
 
 tape('booleans array', t => {
+	t.deepEqual(opsh($`-c input.txt`), {
+		options: { c: 'input.txt' },
+		operands: []
+	});
+
 	t.deepEqual(opsh($`-c input.txt`, ['c']), {
 		options: { c: true },
 		operands: ['input.txt']
